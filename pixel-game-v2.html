@@ -1,0 +1,879 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Penniless Pilgrim - Pixel Art Edition</title>
+    <script src="./phaser.min.js"></script>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #2c3e50, #34495e);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .game-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            max-width: 1000px;
+            width: 100%;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+            font-family: 'Courier New', monospace;
+        }
+        
+        .game-area {
+            display: flex;
+            gap: 20px;
+            align-items: flex-start;
+        }
+        
+        .phaser-container {
+            border: 4px solid #34495e;
+            border-radius: 8px;
+            overflow: hidden;
+            image-rendering: pixelated;
+            image-rendering: -moz-crisp-edges;
+            image-rendering: crisp-edges;
+        }
+        
+        .ui-panel {
+            flex: 1;
+            min-width: 300px;
+        }
+        
+        .info-box {
+            background: linear-gradient(135deg, rgba(255,255,255,0.9), rgba(240,248,255,0.9));
+            padding: 15px;
+            border-radius: 10px;
+            border: 2px solid #3498db;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        
+        .info-box h3 {
+            margin-top: 0;
+            color: #2c3e50;
+            font-size: 1.2em;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        
+        .status-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 8px 0;
+            padding: 5px 0;
+            border-bottom: 1px solid rgba(0,0,0,0.1);
+        }
+        
+        .status-label {
+            font-weight: bold;
+            color: #34495e;
+        }
+        
+        .status-value {
+            color: #2c3e50;
+            font-weight: 600;
+        }
+        
+        .tax-display {
+            font-size: 18px;
+            font-weight: bold;
+            color: #e74c3c;
+            animation: taxPulse 2s ease-in-out infinite;
+        }
+        
+        @keyframes taxPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        
+        .controls {
+            text-align: center;
+            margin: 15px 0;
+        }
+        
+        .direction-buttons {
+            display: grid;
+            grid-template-columns: repeat(3, 80px);
+            grid-template-rows: repeat(3, 50px);
+            gap: 8px;
+            justify-content: center;
+            margin: 15px 0;
+        }
+        
+        .direction-btn {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 18px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            font-family: 'Courier New', monospace;
+        }
+        
+        .direction-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            background: linear-gradient(135deg, #2980b9, #1f618d);
+        }
+        
+        .direction-btn:disabled {
+            background: linear-gradient(135deg, #bdc3c7, #95a5a6);
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .direction-btn.north { grid-column: 2; grid-row: 1; }
+        .direction-btn.west { grid-column: 1; grid-row: 2; }
+        .direction-btn.east { grid-column: 3; grid-row: 2; }
+        .direction-btn.south { grid-column: 2; grid-row: 3; }
+        
+        .reset-btn {
+            background: linear-gradient(135deg, #27ae60, #229954);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            margin: 10px;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            font-family: 'Courier New', monospace;
+        }
+        
+        .reset-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        }
+        
+        .accordion-header {
+            padding: 12px;
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.3s ease;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: linear-gradient(135deg, rgba(233, 236, 239, 0.9), rgba(248, 249, 250, 0.9));
+            border-radius: 8px;
+            margin-bottom: 5px;
+        }
+        
+        .accordion-header:hover {
+            background: linear-gradient(135deg, rgba(220, 225, 230, 0.9), rgba(235, 240, 245, 0.9));
+        }
+        
+        .accordion-toggle {
+            font-size: 1.2em;
+            transition: transform 0.3s ease;
+            color: #6c757d;
+        }
+        
+        .accordion-toggle.expanded {
+            transform: rotate(180deg);
+        }
+        
+        .accordion-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+            background: rgba(248, 249, 250, 0.95);
+            border-radius: 0 0 8px 8px;
+        }
+        
+        .accordion-content.expanded {
+            max-height: 200px;
+        }
+        
+        .accordion-content ul {
+            margin: 0;
+            padding: 15px 20px;
+            line-height: 1.6;
+        }
+        
+        .accordion-content li {
+            margin-bottom: 6px;
+            font-size: 0.9em;
+        }
+        
+        .history {
+            max-height: 150px;
+            overflow-y: auto;
+            background: rgba(248, 249, 250, 0.9);
+            padding: 10px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+            border: 1px solid #dee2e6;
+        }
+        
+        .history::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .history::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 3px;
+        }
+        
+        .history::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 3px;
+        }
+        
+        .game-over {
+            text-align: center;
+            padding: 20px;
+            background: linear-gradient(135deg, #d4edda, #c3e6cb);
+            border: 2px solid #28a745;
+            border-radius: 10px;
+            margin: 15px 0;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        
+        /* Mobile responsive */
+        @media (max-width: 768px) {
+            .game-area {
+                flex-direction: column;
+            }
+            
+            .ui-panel {
+                min-width: auto;
+                width: 100%;
+            }
+            
+            .direction-buttons {
+                grid-template-columns: repeat(3, 70px);
+                grid-template-rows: repeat(3, 45px);
+            }
+            
+            .direction-btn {
+                font-size: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1>🗡️ PENNILESS PILGRIM 🏛️</h1>
+        
+        <div class="game-area">
+            <div class="phaser-container" id="phaser-game"></div>
+            
+            <div class="ui-panel">
+                <!-- Tax Rules Accordion -->
+                <div class="info-box">
+                    <div class="accordion-header" onclick="toggleAccordion()">
+                        <h3>⚖️ Sacred Tax Laws</h3>
+                        <span class="accordion-toggle" id="accordionToggle">▼</span>
+                    </div>
+                    <div class="accordion-content" id="accordionContent">
+                        <ul>
+                            <li><strong>🧭 North:</strong> Divine blessing - Tax ÷ 2</li>
+                            <li><strong>🏔️ South:</strong> Mountain toll - Tax × 2</li>
+                            <li><strong>🌅 East:</strong> Sunrise fee - Tax + 2</li>
+                            <li><strong>🌄 West:</strong> Sunset relief - Tax - 2</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <!-- Status Panel -->
+                <div class="info-box">
+                    <h3>📍 Pilgrim Status</h3>
+                    <div class="status-item">
+                        <span class="status-label">Position:</span>
+                        <span class="status-value" id="currentPosition">[0, 4]</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="status-label">Tax Burden:</span>
+                        <span id="currentTax" class="tax-display">0</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="status-label">Available Paths:</span>
+                        <span class="status-value" id="validDirections">N, E, S, W</span>
+                    </div>
+                </div>
+                
+                <!-- Journey Chronicle Accordion -->
+                <div class="info-box">
+                    <div class="accordion-header" onclick="toggleLogAccordion()">
+                        <h3>📜 Journey Chronicle</h3>
+                        <span class="accordion-toggle expanded" id="logAccordionToggle">▼</span>
+                    </div>
+                    <div class="accordion-content expanded" id="logAccordionContent">
+                        <div id="travelHistory" class="history">Your pixel quest begins...</div>
+                    </div>
+                </div>
+                
+                <!-- Controls -->
+                <div class="controls">
+                    <div class="direction-buttons">
+                        <button class="direction-btn north" onclick="move('N')" id="btnN" title="North">↑</button>
+                        <button class="direction-btn west" onclick="move('W')" id="btnW" title="West">←</button>
+                        <button class="direction-btn east" onclick="move('E')" id="btnE" title="East">→</button>
+                        <button class="direction-btn south" onclick="move('S')" id="btnS" title="South">↓</button>
+                    </div>
+                    
+                    <button class="reset-btn" onclick="resetGame()">🔄 New Quest</button>
+                </div>
+                
+                <div id="gameOverMessage" class="game-over" style="display: none;">
+                    <h3 id="gameOverTitle">Quest Complete!</h3>
+                    <p id="gameOverText"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Game logic class (same as before but adapted for Phaser)
+        class PennilessPilgrim {
+            constructor() {
+                this.loc = [0, 4];
+                this.tax = 0.0;
+                this.history = [];
+                this.gameOver = false;
+                this.traveledStreets = new Set();
+            }
+            
+            addStreet(street) {
+                this.history.push(street);
+                this.traveledStreets.add(street);
+                const parts = street.split(' to ');
+                const streetRev = parts[1] + ' to ' + parts[0];
+                this.traveledStreets.add(streetRev);
+            }
+            
+            searchStreet(street) {
+                const parts = street.split(' to ');
+                const streetRev = parts[1] + ' to ' + parts[0];
+                return this.history.some(oldStreet => 
+                    oldStreet === street || oldStreet === streetRev
+                );
+            }
+            
+            outOfBounds(loc) {
+                const bounds = [];
+                if (loc[0] === 0) bounds.push('W');
+                if (loc[0] === 4) bounds.push('E');
+                if (loc[1] === 4) bounds.push('N');
+                if (loc[1] === 0) bounds.push('S');
+                return bounds;
+            }
+            
+            validDirections() {
+                const valid = [];
+                const possibleStreets = this.directionStreets();
+                const forbidden = { N: false, S: false, E: false, W: false };
+                
+                for (const key in possibleStreets) {
+                    if (this.searchStreet(possibleStreets[key])) {
+                        forbidden[key] = true;
+                    }
+                }
+                
+                for (const key in forbidden) {
+                    if (!forbidden[key]) {
+                        valid.push(key);
+                    }
+                }
+                
+                const outOfBounds = this.outOfBounds(this.loc);
+                return valid.filter(dir => !outOfBounds.includes(dir));
+            }
+            
+            directionStreets() {
+                const streetN = `[${this.loc[0]},${this.loc[1]}] to [${this.loc[0]},${this.loc[1] + 1}]`;
+                const streetS = `[${this.loc[0]},${this.loc[1]}] to [${this.loc[0]},${this.loc[1] - 1}]`;
+                const streetE = `[${this.loc[0]},${this.loc[1]}] to [${this.loc[0] + 1},${this.loc[1]}]`;
+                const streetW = `[${this.loc[0]},${this.loc[1]}] to [${this.loc[0] - 1},${this.loc[1]}]`;
+                
+                return { N: streetN, S: streetS, E: streetE, W: streetW };
+            }
+            
+            addTax(dir) {
+                switch (dir) {
+                    case 'S': this.tax = this.tax * 2; break;
+                    case 'N': this.tax = this.tax / 2; break;
+                    case 'E': this.tax += 2; break;
+                    case 'W': this.tax -= 2; break;
+                }
+            }
+            
+            newLocation(dir) {
+                switch (dir) {
+                    case 'N': this.loc[1] += 1; break;
+                    case 'S': this.loc[1] -= 1; break;
+                    case 'E': this.loc[0] += 1; break;
+                    case 'W': this.loc[0] -= 1; break;
+                }
+            }
+            
+            move(dir) {
+                if (this.gameOver) return false;
+                
+                const validDirs = this.validDirections();
+                if (!validDirs.includes(dir)) return false;
+                
+                const possibleStreets = this.directionStreets();
+                this.addStreet(possibleStreets[dir]);
+                this.addTax(dir);
+                this.newLocation(dir);
+                
+                if (this.loc[0] === 4 && this.loc[1] === 0) {
+                    this.gameOver = true;
+                } else if (this.validDirections().length === 0) {
+                    this.gameOver = true;
+                }
+                
+                return true;
+            }
+            
+            reset() {
+                this.loc = [0, 4];
+                this.tax = 0.0;
+                this.history = [];
+                this.gameOver = false;
+                this.traveledStreets.clear();
+            }
+        }
+
+        // Global game instance
+        let game = new PennilessPilgrim();
+        let phaserGame;
+        let gameScene;
+        
+        // Phaser game configuration
+        const config = {
+            type: Phaser.AUTO,
+            width: 480,
+            height: 480,
+            parent: 'phaser-game',
+            backgroundColor: '#2c5530',
+            pixelArt: true,
+            scene: {
+                preload: preload,
+                create: create,
+                update: update
+            },
+            scale: {
+                mode: Phaser.Scale.FIT,
+                autoCenter: Phaser.Scale.CENTER_BOTH
+            }
+        };
+        
+        // Phaser scene functions
+        function preload() {
+            // Load sprite sheets and tileset with CORRECT frame dimensions
+            this.load.spritesheet('pilgrim_idle', 'public/Idle.png', { 
+                frameWidth: 128,  // 768px ÷ 6 frames = 128px per frame
+                frameHeight: 128  // Full height of the sprite sheet
+            });
+            this.load.spritesheet('pilgrim_walk', 'public/Walk.png', { 
+                frameWidth: 128,  // 1280px ÷ 10 frames = 128px per frame
+                frameHeight: 128  // Full height of the sprite sheet
+            });
+            this.load.spritesheet('tiles', 'public/Map_tiles.png', { 
+                frameWidth: 32, 
+                frameHeight: 32 
+            });
+            
+            // Add loading progress feedback
+            this.load.on('progress', function (value) {
+                console.log('Loading progress: ' + Math.round(value * 100) + '%');
+            });
+            
+            this.load.on('complete', function () {
+                console.log('All assets loaded successfully!');
+                console.log('Idle sprite: 768x128 (6 frames of 128x128)');
+                console.log('Walk sprite: 1280x128 (10 frames of 128x128)');
+            });
+            
+            this.load.on('loaderror', function (file) {
+                console.error('Error loading file:', file.src);
+            });
+        }
+        
+        function create() {
+            gameScene = this;
+            
+            // Create tile map
+            this.tileMap = [];
+            this.streetSprites = [];
+            this.pilgrimSprite = null;
+            this.templeSprite = null;
+            
+            // Create animations with correct frame counts
+            this.anims.create({
+                key: 'idle',
+                frames: this.anims.generateFrameNumbers('pilgrim_idle', { start: 0, end: 5 }), // 6 frames (0-5)
+                frameRate: 6,
+                repeat: -1
+            });
+            
+            this.anims.create({
+                key: 'walk',
+                frames: this.anims.generateFrameNumbers('pilgrim_walk', { start: 0, end: 9 }), // 10 frames (0-9)
+                frameRate: 10,
+                repeat: 0
+            });
+            
+            // Initialize the visual game
+            createPixelGrid();
+            
+            // Add click handlers for tiles
+            this.input.on('gameobjectdown', handleTileClick);
+            
+            // Debug: Log that create function completed
+            console.log('Game scene created successfully!');
+        }
+        
+        function update() {
+            // Game update logic if needed
+        }
+        
+        function createPixelGrid() {
+            const tileSize = 64;
+            const roadWidth = 16; // Space between tiles for roads
+            const startX = 80;
+            const startY = 80;
+            
+            // Clear existing sprites
+            if (gameScene.tileMap) {
+                gameScene.tileMap.forEach(row => {
+                    if (row) {
+                        row.forEach(tile => {
+                            if (tile) tile.destroy();
+                        });
+                    }
+                });
+            }
+            
+            if (gameScene.streetSprites) {
+                gameScene.streetSprites.forEach(street => street.destroy());
+            }
+            
+            if (gameScene.pilgrimSprite) {
+                gameScene.pilgrimSprite.destroy();
+            }
+            
+            if (gameScene.templeSprite) {
+                gameScene.templeSprite.destroy();
+            }
+            
+            gameScene.tileMap = [];
+            gameScene.streetSprites = [];
+            
+            // FIRST: Create grid tiles (background layer)
+            for (let y = 0; y < 5; y++) {
+                gameScene.tileMap[y] = [];
+                for (let x = 0; x < 5; x++) {
+                    const pixelX = startX + x * (tileSize + roadWidth);
+                    const pixelY = startY + (4 - y) * (tileSize + roadWidth); // Flip Y coordinate
+                    
+                    // Create stone/pavement tile (using frame 2 from tileset - gray stone)
+                    const tile = gameScene.add.sprite(pixelX, pixelY, 'tiles', 2);
+                    tile.setOrigin(0, 0);
+                    tile.setInteractive();
+                    tile.gridX = x;
+                    tile.gridY = y;
+                    tile.setScale(2); // Scale up for better visibility
+                    tile.setDepth(0); // Background layer
+                    
+                    // Check if clickable
+                    const direction = getDirectionToCell(x, y);
+                    if (direction && !game.gameOver) {
+                        tile.setTint(0xaaffaa); // Light green tint for clickable
+                        tile.isClickable = true;
+                        tile.direction = direction;
+                    } else {
+                        tile.clearTint();
+                        tile.isClickable = false;
+                    }
+                    
+                    gameScene.tileMap[y][x] = tile;
+                }
+            }
+            
+            // SECOND: Create street overlays (middle layer)
+            createPixelStreets();
+            
+            // THIRD: Create temple (upper layer)
+            const templeX = startX + 4 * (tileSize + roadWidth) + 32;
+            const templeY = startY + 4 * (tileSize + roadWidth) + 32;
+            gameScene.templeSprite = gameScene.add.rectangle(templeX, templeY, 48, 48, 0xFFD700);
+            gameScene.templeSprite.setStrokeStyle(3, 0xFF6347);
+            gameScene.templeSprite.setDepth(10); // Above tiles but below pilgrim
+            
+            // FOURTH: Create pilgrim sprite (top layer)
+            const pilgrimX = startX + game.loc[0] * (tileSize + roadWidth) + 32;
+            const pilgrimY = startY + (4 - game.loc[1]) * (tileSize + roadWidth) + 32;
+            
+            // Create pilgrim sprite with explicit frame
+            gameScene.pilgrimSprite = gameScene.add.sprite(pilgrimX, pilgrimY, 'pilgrim_idle', 0);
+            gameScene.pilgrimSprite.setOrigin(0.5, 0.5);
+            gameScene.pilgrimSprite.setScale(0.5); // Scale DOWN since sprites are 128x128 (was too big at 2x)
+            gameScene.pilgrimSprite.setDepth(20); // Top layer - above everything
+            
+            // Start idle animation
+            if (gameScene.anims.exists('idle')) {
+                gameScene.pilgrimSprite.play('idle');
+                console.log('Playing idle animation');
+            } else {
+                console.log('Idle animation does not exist');
+            }
+            
+            console.log('Pilgrim sprite created at:', pilgrimX, pilgrimY, 'with scale: 0.5, depth:', gameScene.pilgrimSprite.depth);
+        }
+        
+        function createPixelStreets() {
+            const tileSize = 64;
+            const roadWidth = 16; // Must match the roadWidth from createPixelGrid
+            const startX = 80;
+            const startY = 80;
+            
+            // Horizontal streets
+            for (let y = 0; y < 5; y++) {
+                for (let x = 0; x < 4; x++) {
+                    const streetKey1 = `[${x},${y}] to [${x+1},${y}]`;
+                    const streetKey2 = `[${x+1},${y}] to [${x},${y}]`;
+                    
+                    if (game.traveledStreets.has(streetKey1) || game.traveledStreets.has(streetKey2)) {
+                        const streetX = startX + x * (tileSize + roadWidth) + tileSize + (roadWidth / 2);
+                        const streetY = startY + (4 - y) * (tileSize + roadWidth) + 32;
+                        
+                        const street = gameScene.add.rectangle(streetX, streetY, roadWidth, 8, 0x8B4513);
+                        street.setOrigin(0.5, 0.5);
+                        street.setDepth(5); // Above tiles, below characters
+                        gameScene.streetSprites.push(street);
+                    }
+                }
+            }
+            
+            // Vertical streets
+            for (let y = 0; y < 4; y++) {
+                for (let x = 0; x < 5; x++) {
+                    const streetKey1 = `[${x},${y}] to [${x},${y+1}]`;
+                    const streetKey2 = `[${x},${y+1}] to [${x},${y}]`;
+                    
+                    if (game.traveledStreets.has(streetKey1) || game.traveledStreets.has(streetKey2)) {
+                        const streetX = startX + x * (tileSize + roadWidth) + 32;
+                        const streetY = startY + (4 - y - 1) * (tileSize + roadWidth) + tileSize + (roadWidth / 2);
+                        
+                        const street = gameScene.add.rectangle(streetX, streetY, 8, roadWidth, 0x8B4513);
+                        street.setOrigin(0.5, 0.5);
+                        street.setDepth(5); // Above tiles, below characters
+                        gameScene.streetSprites.push(street);
+                    }
+                }
+            }
+        }
+        
+        function handleTileClick(pointer, gameObject) {
+            if (gameObject.isClickable && gameObject.direction) {
+                move(gameObject.direction);
+            }
+        }
+        
+        // Helper functions (same as before)
+        function getDirectionToCell(x, y) {
+            const currentX = game.loc[0];
+            const currentY = game.loc[1];
+            const deltaX = x - currentX;
+            const deltaY = y - currentY;
+            
+            if (Math.abs(deltaX) + Math.abs(deltaY) !== 1) return null;
+            
+            if (deltaX === 1) return 'E';
+            if (deltaX === -1) return 'W';
+            if (deltaY === 1) return 'N';
+            if (deltaY === -1) return 'S';
+            return null;
+        }
+        
+        // UI Functions
+        function updateDisplay() {
+            document.getElementById('currentPosition').textContent = `[${game.loc[0]}, ${game.loc[1]}]`;
+            document.getElementById('currentTax').textContent = game.tax.toFixed(1);
+            
+            const validDirs = game.validDirections();
+            const dirEmojis = { N: '🧭', S: '🏔️', E: '🌅', W: '🌄' };
+            const validDirText = validDirs.length > 0 ? 
+                validDirs.map(dir => `${dirEmojis[dir]} ${dir}`).join(', ') : 
+                '❌ None';
+            document.getElementById('validDirections').textContent = validDirText;
+            
+            ['N', 'S', 'E', 'W'].forEach(dir => {
+                const btn = document.getElementById(`btn${dir}`);
+                btn.disabled = !validDirs.includes(dir) || game.gameOver;
+            });
+            
+            const historyDiv = document.getElementById('travelHistory');
+            if (game.history.length === 0) {
+                historyDiv.innerHTML = '<em>Your pixel quest begins...</em>';
+            } else {
+                const formattedHistory = game.history.map((street, index) => {
+                    const parts = street.split(' to ');
+                    return `<div style="margin: 3px 0; padding: 2px 0; border-bottom: 1px solid #eee;">
+                        <strong>${index + 1}.</strong> ${parts[0]} → ${parts[1]}
+                    </div>`;
+                }).join('');
+                historyDiv.innerHTML = formattedHistory;
+                historyDiv.scrollTop = historyDiv.scrollHeight;
+            }
+            
+            const gameOverDiv = document.getElementById('gameOverMessage');
+            const gameOverTitle = document.getElementById('gameOverTitle');
+            const gameOverText = document.getElementById('gameOverText');
+            
+            if (game.gameOver) {
+                gameOverDiv.style.display = 'block';
+                if (game.loc[0] === 4 && game.loc[1] === 0) {
+                    gameOverTitle.textContent = '🎉 Pixel Quest Complete!';
+                    gameOverText.innerHTML = `
+                        <div style="font-size: 1.1em; margin: 10px 0;">
+                            🏛️ You have reached the sacred temple! 🏛️
+                        </div>
+                        <div>Final tax burden: <span style="color: #e74c3c; font-weight: bold;">${game.tax.toFixed(1)}</span></div>
+                    `;
+                } else {
+                    gameOverTitle.textContent = '⚠️ Quest Halted';
+                    gameOverText.innerHTML = `
+                        <div style="font-size: 1.1em; margin: 10px 0;">
+                            🚫 Your path is blocked! No more moves available.
+                        </div>
+                        <div>Final tax burden: <span style="color: #e74c3c; font-weight: bold;">${game.tax.toFixed(1)}</span></div>
+                    `;
+                }
+            } else {
+                gameOverDiv.style.display = 'none';
+            }
+        }
+        
+        function move(direction) {
+            if (game.move(direction)) {
+                // Play walk animation with longer duration
+                if (gameScene.pilgrimSprite) {
+                    gameScene.pilgrimSprite.play('walk');
+                }
+                
+                // Animate pilgrim movement with slower, smoother animation
+                const tileSize = 64;
+                const roadWidth = 16; // Must match the roadWidth from createPixelGrid
+                const startX = 80;
+                const startY = 80;
+                const newX = startX + game.loc[0] * (tileSize + roadWidth) + 32;
+                const newY = startY + (4 - game.loc[1]) * (tileSize + roadWidth) + 32;
+                
+                gameScene.tweens.add({
+                    targets: gameScene.pilgrimSprite,
+                    x: newX,
+                    y: newY,
+                    duration: 800, // Increased from 300ms to 800ms for slower movement
+                    ease: 'Power1', // Smoother easing
+                    onComplete: () => {
+                        // Return to idle animation after movement completes
+                        if (gameScene.pilgrimSprite && gameScene.anims.exists('idle')) {
+                            gameScene.pilgrimSprite.play('idle');
+                        }
+                        createPixelGrid();
+                        updateDisplay();
+                    }
+                });
+            }
+        }
+        
+        function resetGame() {
+            game.reset();
+            createPixelGrid();
+            updateDisplay();
+        }
+        
+        // Accordion functions
+        function toggleAccordion() {
+            const content = document.getElementById('accordionContent');
+            const toggle = document.getElementById('accordionToggle');
+            
+            if (content.classList.contains('expanded')) {
+                content.classList.remove('expanded');
+                toggle.classList.remove('expanded');
+            } else {
+                content.classList.add('expanded');
+                toggle.classList.add('expanded');
+            }
+        }
+        
+        function toggleLogAccordion() {
+            const content = document.getElementById('logAccordionContent');
+            const toggle = document.getElementById('logAccordionToggle');
+            
+            if (content.classList.contains('expanded')) {
+                content.classList.remove('expanded');
+                toggle.classList.remove('expanded');
+            } else {
+                content.classList.add('expanded');
+                toggle.classList.add('expanded');
+            }
+        }
+        
+        // Keyboard controls
+        document.addEventListener('keydown', function(event) {
+            if (game.gameOver) return;
+            
+            switch(event.key.toLowerCase()) {
+                case 'w':
+                case 'arrowup':
+                    event.preventDefault();
+                    move('N');
+                    break;
+                case 's':
+                case 'arrowdown':
+                    event.preventDefault();
+                    move('S');
+                    break;
+                case 'd':
+                case 'arrowright':
+                    event.preventDefault();
+                    move('E');
+                    break;
+                case 'a':
+                case 'arrowleft':
+                    event.preventDefault();
+                    move('W');
+                    break;
+                case 'r':
+                    event.preventDefault();
+                    resetGame();
+                    break;
+            }
+        });
+        
+        // Initialize Phaser game
+        window.addEventListener('load', () => {
+            phaserGame = new Phaser.Game(config);
+            updateDisplay();
+        });
+    </script>
+</body>
+</html>

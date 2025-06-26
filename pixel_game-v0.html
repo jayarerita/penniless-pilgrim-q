@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Penniless Pilgrim Game</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .game-container {
+            background-color: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 20px;
+        }
+        
+        .intro {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #666;
+        }
+        
+        .grid-container {
+            display: flex;
+            justify-content: center;
+            margin: 20px 0;
+        }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(5, 60px);
+            grid-template-rows: repeat(5, 60px);
+            gap: 2px;
+            background-color: #ddd;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        
+        .cell {
+            background-color: #f9f9f9;
+            border: 2px solid #ccc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            color: #666;
+            position: relative;
+        }
+        
+        .cell.current {
+            background-color: #4CAF50;
+            color: white;
+            font-weight: bold;
+            border-color: #45a049;
+        }
+        
+        .cell.temple {
+            background-color: #FFD700;
+            color: #333;
+            font-weight: bold;
+        }
+        
+        .info-panel {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 20px 0;
+        }
+        
+        .info-box {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 4px solid #007bff;
+        }
+        
+        .info-box h3 {
+            margin-top: 0;
+            color: #333;
+        }
+        
+        .tax-display {
+            font-size: 18px;
+            font-weight: bold;
+            color: #d9534f;
+        }
+        
+        .controls {
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        .direction-buttons {
+            display: grid;
+            grid-template-columns: repeat(3, 80px);
+            grid-template-rows: repeat(3, 40px);
+            gap: 5px;
+            justify-content: center;
+            margin: 20px 0;
+        }
+        
+        .direction-btn {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: background-color 0.3s;
+        }
+        
+        .direction-btn:hover:not(:disabled) {
+            background-color: #0056b3;
+        }
+        
+        .direction-btn:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .direction-btn.north { grid-column: 2; grid-row: 1; }
+        .direction-btn.west { grid-column: 1; grid-row: 2; }
+        .direction-btn.east { grid-column: 3; grid-row: 2; }
+        .direction-btn.south { grid-column: 2; grid-row: 3; }
+        
+        .reset-btn {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px;
+        }
+        
+        .reset-btn:hover {
+            background-color: #218838;
+        }
+        
+        .history {
+            max-height: 150px;
+            overflow-y: auto;
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        
+        .game-over {
+            text-align: center;
+            padding: 20px;
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        
+        .tax-rules {
+            background-color: #e9ecef;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        
+        .tax-rules h3 {
+            margin-top: 0;
+        }
+        
+        .tax-rules ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1>🚶‍♂️ Penniless Pilgrim Game</h1>
+        
+        <div class="intro">
+            <p>You are a traveler starting at the northwest corner of the grid. Navigate to the temple at the southeast corner (4,0) without retracing your steps!</p>
+        </div>
+        
+        <div class="tax-rules">
+            <h3>Tax Rules:</h3>
+            <ul>
+                <li><strong>North (↑):</strong> Tax ÷ 2</li>
+                <li><strong>South (↓):</strong> Tax × 2</li>
+                <li><strong>East (→):</strong> Tax + 2</li>
+                <li><strong>West (←):</strong> Tax - 2</li>
+            </ul>
+        </div>
+        
+        <div class="grid-container">
+            <div class="grid" id="gameGrid"></div>
+        </div>
+        
+        <div class="info-panel">
+            <div class="info-box">
+                <h3>Current Status</h3>
+                <p>Position: <span id="currentPosition">[0, 4]</span></p>
+                <p>Tax: <span id="currentTax" class="tax-display">0</span></p>
+                <p>Valid Directions: <span id="validDirections">N, E, S, W</span></p>
+            </div>
+            
+            <div class="info-box">
+                <h3>Travel History</h3>
+                <div id="travelHistory" class="history">Game started...</div>
+            </div>
+        </div>
+        
+        <div class="controls">
+            <div class="direction-buttons">
+                <button class="direction-btn north" onclick="move('N')" id="btnN">↑</button>
+                <button class="direction-btn west" onclick="move('W')" id="btnW">←</button>
+                <button class="direction-btn east" onclick="move('E')" id="btnE">→</button>
+                <button class="direction-btn south" onclick="move('S')" id="btnS">↓</button>
+            </div>
+            
+            <button class="reset-btn" onclick="resetGame()">Reset Game</button>
+        </div>
+        
+        <div id="gameOverMessage" class="game-over" style="display: none;">
+            <h3>Game Over!</h3>
+            <p id="gameOverText"></p>
+        </div>
+    </div>
+
+    <script>
+        class PennilessPilgrim {
+            constructor() {
+                this.loc = [0, 4];  // Starting at northwest corner
+                this.tax = 0.0;
+                this.history = [];
+                this.gameOver = false;
+            }
+            
+            addStreet(street) {
+                this.history.push(street);
+            }
+            
+            searchStreet(street) {
+                // Create reverse string to check opposite direction
+                const parts = street.split(' to ');
+                const streetRev = parts[1] + ' to ' + parts[0];
+                
+                // Check if street has been traveled in either direction
+                return this.history.some(oldStreet => 
+                    oldStreet === street || oldStreet === streetRev
+                );
+            }
+            
+            outOfBounds(loc) {
+                const bounds = [];
+                if (loc[0] === 0) bounds.push('W');
+                if (loc[0] === 4) bounds.push('E');
+                if (loc[1] === 4) bounds.push('N');
+                if (loc[1] === 0) bounds.push('S');
+                return bounds;
+            }
+            
+            validDirections() {
+                const valid = [];
+                const possibleStreets = this.directionStreets();
+                const forbidden = { N: false, S: false, E: false, W: false };
+                
+                // Check which directions have been traveled
+                for (const key in possibleStreets) {
+                    if (this.searchStreet(possibleStreets[key])) {
+                        forbidden[key] = true;
+                    }
+                }
+                
+                // Add non-forbidden directions
+                for (const key in forbidden) {
+                    if (!forbidden[key]) {
+                        valid.push(key);
+                    }
+                }
+                
+                // Remove out of bounds directions
+                const outOfBounds = this.outOfBounds(this.loc);
+                return valid.filter(dir => !outOfBounds.includes(dir));
+            }
+            
+            directionStreets() {
+                const streetN = `[${this.loc[0]},${this.loc[1]}] to [${this.loc[0]},${this.loc[1] + 1}]`;
+                const streetS = `[${this.loc[0]},${this.loc[1]}] to [${this.loc[0]},${this.loc[1] - 1}]`;
+                const streetE = `[${this.loc[0]},${this.loc[1]}] to [${this.loc[0] + 1},${this.loc[1]}]`;
+                const streetW = `[${this.loc[0]},${this.loc[1]}] to [${this.loc[0] - 1},${this.loc[1]}]`;
+                
+                return { N: streetN, S: streetS, E: streetE, W: streetW };
+            }
+            
+            addTax(dir) {
+                switch (dir) {
+                    case 'S':
+                        this.tax = this.tax * 2;
+                        break;
+                    case 'N':
+                        this.tax = this.tax / 2;
+                        break;
+                    case 'E':
+                        this.tax += 2;
+                        break;
+                    case 'W':
+                        this.tax -= 2;
+                        break;
+                }
+            }
+            
+            newLocation(dir) {
+                switch (dir) {
+                    case 'N':
+                        this.loc[1] += 1;
+                        break;
+                    case 'S':
+                        this.loc[1] -= 1;
+                        break;
+                    case 'E':
+                        this.loc[0] += 1;
+                        break;
+                    case 'W':
+                        this.loc[0] -= 1;
+                        break;
+                }
+            }
+            
+            move(dir) {
+                if (this.gameOver) return false;
+                
+                const validDirs = this.validDirections();
+                if (!validDirs.includes(dir)) {
+                    return false;
+                }
+                
+                // Get possible streets and add chosen street to history
+                const possibleStreets = this.directionStreets();
+                this.addStreet(possibleStreets[dir]);
+                
+                // Update tax and location
+                this.addTax(dir);
+                this.newLocation(dir);
+                
+                // Check if game is over
+                if (this.loc[0] === 4 && this.loc[1] === 0) {
+                    this.gameOver = true;
+                } else if (this.validDirections().length === 0) {
+                    this.gameOver = true;
+                }
+                
+                return true;
+            }
+            
+            reset() {
+                this.loc = [0, 4];
+                this.tax = 0.0;
+                this.history = [];
+                this.gameOver = false;
+            }
+        }
+        
+        // Game instance
+        let game = new PennilessPilgrim();
+        
+        function createGrid() {
+            const grid = document.getElementById('gameGrid');
+            grid.innerHTML = '';
+            
+            // Create grid from top to bottom (y=4 to y=0)
+            for (let y = 4; y >= 0; y--) {
+                for (let x = 0; x < 5; x++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    cell.textContent = `${x},${y}`;
+                    
+                    // Mark current position
+                    if (x === game.loc[0] && y === game.loc[1]) {
+                        cell.classList.add('current');
+                        cell.textContent = 'YOU';
+                    }
+                    
+                    // Mark temple (destination)
+                    if (x === 4 && y === 0) {
+                        cell.classList.add('temple');
+                        if (!(x === game.loc[0] && y === game.loc[1])) {
+                            cell.textContent = 'TEMPLE';
+                        }
+                    }
+                    
+                    grid.appendChild(cell);
+                }
+            }
+        }
+        
+        function updateDisplay() {
+            // Update position
+            document.getElementById('currentPosition').textContent = `[${game.loc[0]}, ${game.loc[1]}]`;
+            
+            // Update tax
+            document.getElementById('currentTax').textContent = game.tax.toFixed(1);
+            
+            // Update valid directions
+            const validDirs = game.validDirections();
+            document.getElementById('validDirections').textContent = validDirs.length > 0 ? validDirs.join(', ') : 'None';
+            
+            // Update direction buttons
+            ['N', 'S', 'E', 'W'].forEach(dir => {
+                const btn = document.getElementById(`btn${dir}`);
+                btn.disabled = !validDirs.includes(dir) || game.gameOver;
+            });
+            
+            // Update history
+            const historyDiv = document.getElementById('travelHistory');
+            if (game.history.length === 0) {
+                historyDiv.textContent = 'Game started...';
+            } else {
+                historyDiv.innerHTML = game.history.map((street, index) => 
+                    `${index + 1}. ${street}`
+                ).join('<br>');
+                historyDiv.scrollTop = historyDiv.scrollHeight;
+            }
+            
+            // Check game over conditions
+            const gameOverDiv = document.getElementById('gameOverMessage');
+            const gameOverText = document.getElementById('gameOverText');
+            
+            if (game.gameOver) {
+                gameOverDiv.style.display = 'block';
+                if (game.loc[0] === 4 && game.loc[1] === 0) {
+                    gameOverText.innerHTML = `🎉 Congratulations! You reached the temple!<br>Final tax: ${game.tax.toFixed(1)}`;
+                } else {
+                    gameOverText.innerHTML = `😔 You're stuck! No more valid moves available.<br>Final tax: ${game.tax.toFixed(1)}`;
+                }
+            } else {
+                gameOverDiv.style.display = 'none';
+            }
+        }
+        
+        function move(direction) {
+            if (game.move(direction)) {
+                createGrid();
+                updateDisplay();
+            }
+        }
+        
+        function resetGame() {
+            game.reset();
+            createGrid();
+            updateDisplay();
+        }
+        
+        // Keyboard controls
+        document.addEventListener('keydown', function(event) {
+            if (game.gameOver) return;
+            
+            switch(event.key.toLowerCase()) {
+                case 'w':
+                case 'arrowup':
+                    move('N');
+                    break;
+                case 's':
+                case 'arrowdown':
+                    move('S');
+                    break;
+                case 'd':
+                case 'arrowright':
+                    move('E');
+                    break;
+                case 'a':
+                case 'arrowleft':
+                    move('W');
+                    break;
+                case 'r':
+                    resetGame();
+                    break;
+            }
+        });
+        
+        // Initialize game
+        createGrid();
+        updateDisplay();
+    </script>
+</body>
+</html>
